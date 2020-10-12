@@ -5,6 +5,8 @@
 #include<math.h>//pow,exp
 #include<chrono>//highresolution clock
 
+#define pass (void)0
+
 #define ld long double
 #define ll long long
 #define ull unsigned long long
@@ -135,32 +137,109 @@ Array2D(ld) mat_transpose(Array2D(ld) a){
     }
     return f;
 }
-
-void feedforward(Array2D(ld) layers,Array3D(ld) weights){
-    // for i in range(len(weights)):
-    //     temp=np.matmul(weights[i],layers[i])
-    //     # print(temp,np.array(list(map(sigmod,temp))))
-    //     layers[i+1]=np.array(list(map(activation_function,temp)))
+void feedforward(Array2D(ld) &layers,Array3D(ld) &weights){
     for(int i=0;i<weights.size();i++){
-        print1D(layers[i]);
-        print2D(weights[i]);
-        Array2D(ld) tmp=mat_mul(weights[0],mat_transpose({layers[0]}));
-        print2D(tmp);
-        // print1D(mat_transpose({tmp[0]})[0]);
+        Array2D(ld) tmp=mat_mul(weights[i],mat_transpose({layers[i]}));
+        layers[i+1]=mat_transpose(tmp)[0];
+        for(int j=0;j<layers[i+1].size();j++){//maping to activation function
+            layers[i+1][j]=activation_function(layers[i+1][j]);
+        }
+        // print1D(layers[i+1]);
     }
-    // print2D({layers[0]});
-    // print2D(mat_transpose({layers[0]}));
+}
+Array2D(ld) weight_change(Array2D(ld) weights){
+    Array2D(ld) temp_weight;
+    Array1D(ld) row_sum;
+    for(int i=0;i<weights.size();i++){row_sum.push_back(vect_sum(weights[i]));}
+    // print1D(row_sum);
+    for(int row=0;row<weights.size();row++){
+        Array1D(ld) tmp_row;
+        for(int item=0;item<weights[row].size();item++){
+            tmp_row.push_back(weights[row][item]/row_sum[row]);
+        }
+        temp_weight.push_back(tmp_row);
+    }
+    return temp_weight;
+}
+Array2D(ld) create_error_matrix(Array3D(ld) weights,Array1D(ld)output_error){
+    Array2D(ld) error_array;
+    error_array.push_back(output_error);
+    for(int i=weights.size()-1;i>0;i--){
+        // print2D(mat_transpose(weight_change(weights[0])));
+        // print2D(mat_transpose({error_array[0]}) );
+        Array1D(ld) tmp=mat_transpose( 
+            mat_mul(
+                mat_transpose(weight_change(weights[i])),
+                mat_transpose({error_array[0]})
+            ) 
+        )[0];
+        // print1D(tmp);
+        error_array.insert(error_array.begin(),tmp);
+    }
+    return error_array;
+}
+Array1D(ld) error_weight_differential(ld error,Array1D(ld) prev_output,Array1D(ld) linked_weights){
+    Array1D(ld) f;
+    // print1D(prev_output);
+    // print1D(linked_weights);
+    //removed -1* temp_sum
+    // ld temp_sum=-1*error*sigmoid_derivative(vect_sum(vect_mul(prev_output,linked_weights)));
+    ld temp_sum=error*sigmoid_derivative(vect_sum(vect_mul(prev_output,linked_weights)));
+    for(int i=0;i<prev_output.size();i++){f.push_back(temp_sum*prev_output[i]);}
+    return f;
+}
+void backpropogate(Array2D(ld) &layers,Array3D(ld) &weights,Array1D(ld)target_output,ld learning_rate){
+    // actual_output=layers[-1]
+    // error_matrix=create_error_matrix(weights,target_output-actual_output)
+    // # print("error:- ",error_matrix)
+
+    // for layer_index in range( (len(error_matrix)-1),-1,-1  ):
+    //     for node in range(len(error_matrix[layer_index])):
+    //         # print(weights[layer_index])
+    //         x=error_weight_differential(
+    //                 error_matrix[layer_index][node],
+    //                 layers[layer_index],
+    //                 weights[layer_index][node]
+    //                 )
+    //         weight_old=weights[layer_index][node]
+    //         weight_new=weight_old-(learning_rate*x )
+    //         # print(weight_old,learning_rate,x,weight_new)
+    //         weights[layer_index][node]=weight_new
+    Array1D(ld) sub;
+    for(int i=0;i<target_output.size();i++){sub.push_back(target_output[i]-layers[layers.size()-1][i]);}
+    // print2D({sub,target_output,layers[layers.size()-1]});
+    Array2D(ld) error_matrix=create_error_matrix(weights,sub);
+    // print2D(error_matrix);
+    for(int layer_index=error_matrix.size()-1;layer_index>=0;layer_index--){
+        for(int node=0;node<error_matrix[layer_index].size();node++){
+            Array1D(ld) x=error_weight_differential(
+                    error_matrix[layer_index][node],
+                    layers[layer_index],
+                    weights[layer_index][node]
+                    );
+            // here there should be - instead of + before learing rate multiplication
+            // but it is componsetated in error_weight_differential
+            // weights[layer_index][node]=weights[layer_index][node]-(learning_rate*x )
+            for(int i=0;i<x.size();i++){
+                weights[layer_index][node][i]=weights[layer_index][node][i]+(x[i]*learning_rate);
+            }
+        }
+    }
+
 }
 int main(int argc ,char** argv){
     //learining rate
-    cout.precision(15);
+    cout.precision(10);
     ld learning_rate=0.0008;
     // cout<<learning_rate<<endl;
+    Array1D(ld) expected={2,4,7},output_tmp;//expected output layer
     Array2D(ld) layers;
     Array3D(ld) weights;
-    layers.push_back(Array1D(ld){1,2,3});//input nodes
-    create_layers(layers,Array1D(int){3,7,4,6,2});//adding hidden nodes
-    layers.push_back(Array1D(ld){2,4,6});//output layer
+    layers.push_back({1,2,3});//input nodes
+    create_layers(layers,{3,7,4,6,2});//adding hidden nodes
+    for(int i=0;i<expected.size();i++){output_tmp.push_back(0);}
+    layers.push_back(output_tmp);//output layer
+    
     // cout<<"Layers"<<endl;
     // print2D(layers);//checking the layers
     weights=random_weight_generator(layers);//creating random weights
@@ -168,10 +247,12 @@ int main(int argc ,char** argv){
     // print3D(weights);//checking the weights
 
     // training 
-    cout<<"Training"<<endl;
+    // cout<<"Training"<<endl;
     feedforward(layers,weights);
-    // cout<<sigmoid(2.71)<<endl;
-    // cout<<sigmoid_derivative(2.71)<<endl;
+    backpropogate(layers,weights,expected,learning_rate);
+    // cout<<"Layers"<<endl;
+    // print2D(layers);//checking the layers
+    
     
     return 0;
 }
