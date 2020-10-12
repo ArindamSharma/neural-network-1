@@ -232,34 +232,47 @@ int main(int argc ,char** argv){
     cout.precision(10);
     ld learning_rate=0.08;
     // cout<<learning_rate<<endl;
-    Array1D(ld) expected={2,4,7},output_tmp;//expected output layer
+    Array1D(ld) expected={2,4,7,5,6,5,6,2,7,4,5,3},output_tmp;//expected output layer
     Array2D(ld) layers;
     Array3D(ld) weights;
-    layers.push_back({1,2,3});//input nodes
-    create_layers(layers,{3,2});//adding hidden nodes
-    create_layers(layers,{3,7,4,6,2});//adding hidden nodes
+    
+    layers.push_back({1,2,3,2,4,1,2,3,5,6,3,4,5,2,3});//input nodes FEATURES
+
+    create_layers(layers,{3,2,5,2,4,3,4});//adding hidden nodes
+
     for(int i=0;i<expected.size();i++){output_tmp.push_back(0);}
     layers.push_back(output_tmp);//output layer
     
     weights=random_weight_generator(layers);//creating random weights
     
     
-    cout<<"Layers"<<endl;
-    print2D(layers);//checking the layers
-    cout<<"Weights"<<endl;
-    print3D(weights);//checking the weights
-    cout<<"Training Started ..."<<endl;
-    for(int i=0 ;i<10000;i++){
+    // cout<<"Layers"<<endl;
+    // print2D(layers);//checking the layers
+    // cout<<"Weights"<<endl;
+    // print3D(weights);//checking the weights
+    // cout<<"Training Started ..."<<endl;
+    
+    auto start = high_resolution_clock::now();
+    ll epoch=10000;
+    for(int i=0 ;i<epoch;i++){
 
         // training 
+        printf("Epoch :- %d\r",i+1);
         feedforward(layers,weights);
         backpropogate(layers,weights,expected,learning_rate);
     }
+    printf("\n");
+    auto stop = high_resolution_clock::now(); 
+    auto duration = duration_cast<microseconds>(stop - start); 
+    // cout << "Time taken for Training : "<< duration.count() << " microseconds" << endl;
+    // cout<<"Epoch :- "<<epoch<<endl;
+    cout << "Time taken for Training : "<< duration.count()/1000000.0 << " Seconds" << endl;
     cout<<"Training Finished"<<endl;
-    cout<<"Layers"<<endl;
-    print2D(layers);//checking the layers
-    cout<<"Weights"<<endl;
-    print3D(weights);//checking the weights
+    
+    // cout<<"Layers"<<endl;
+    // print2D(layers);//checking the layers
+    // cout<<"Weights"<<endl;
+    // print3D(weights);//checking the weights
     
     return 0;
 }
