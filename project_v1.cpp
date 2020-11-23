@@ -22,14 +22,48 @@
 using namespace std::chrono; 
 using namespace std;
 
-void print1D(Array1D(ld) a){
+class NeuralNetwork
+{
+private:
+    ld lr;
+    // Array2D(ld) layers;
+    // Array3D(ld) weights;
+    Array2D(ld) temp_weight_matrix(ld row,ld column,int precision);
+    Array3D(ld) random_weight_generator(Array2D(ld) layers,int precision);
+    ld vect_sum(Array1D(ld) a);
+    Array1D(ld) vect_mul(Array1D(ld) a,Array1D(ld) b);
+    Array1D(ld) mat_col(Array2D(ld) a,ll index);
+    Array1D(ld) mat_row(Array2D(ld) a,ll index);
+    Array2D(ld) mat_mul(Array2D(ld) a,Array2D(ld) b);
+    Array2D(ld) mat_transpose(Array2D(ld) a);
+    void feedforward(Array2D(ld) &layers,Array3D(ld) &weights);
+    Array2D(ld) weight_change(Array2D(ld) weights);
+    Array2D(ld) create_error_matrix(Array3D(ld) weights,Array1D(ld)output_error);
+    Array1D(ld) error_weight_differential(ld error,Array1D(ld) prev_output,Array1D(ld) linked_weights);
+    void backpropogate(Array2D(ld) &layers,Array3D(ld) &weights,Array1D(ld)target_output,ld learning_rate);
+    
+
+public:
+
+    Array2D(ld) layers;
+    Array3D(ld) weights;
+    void print1D(Array1D(ld) a);
+    void print2D(Array2D(ld) a);
+    void print3D(Array3D(ld) a);
+    NeuralNetwork(ld input_nodes,Array1D(ld) hidden_layers_sizes,ld output_nodes,ld learning_rate);
+    ~NeuralNetwork();
+    void train(Array1D(ld) input_layer,Array1D(ld)target_output_layer);
+};
+NeuralNetwork::~NeuralNetwork(){
+}
+void NeuralNetwork::print1D(Array1D(ld) a){
     cout<<"[";
     for ( int i = 0; i < a.size(); i++){
         cout<<a[i]<<",";
     }
     cout<<"\b]"<<endl;
 }
-void print2D(Array2D(ld) a){
+void NeuralNetwork::print2D(Array2D(ld) a){
     cout<<"[[";
     ll i=0;
     for( ll j = 0; j < a[i].size(); j++ ){
@@ -45,7 +79,7 @@ void print2D(Array2D(ld) a){
     }
     cout<<"]"<<endl;
 }
-void print3D(Array3D(ld) a){
+void NeuralNetwork::print3D(Array3D(ld) a){
     cout<<"[";
     for( ll i = 0; i < a.size(); i++){
         if(i==0){cout<<"[";}
@@ -62,13 +96,8 @@ void print3D(Array3D(ld) a){
     }
     cout<<"]"<<endl;
 }
-void create_layers(Array2D(ld) &layers, Array1D(int) node_per_layer){
-    for ( int i = 0; i < node_per_layer.size(); i++ ){
-        Array1D(ld) tmp(node_per_layer[i],0);
-        layers.push_back(tmp);
-    }
-}
-Array2D(ld) temp_weight_matrix(ld row,ld column,int precision=1){
+
+Array2D(ld) NeuralNetwork::temp_weight_matrix(ld row,ld column,int precision=1){
     Array2D(ld) temp_matrix;
     for(int i=0;i<row;i++){
         Array1D(ld) tmp;
@@ -81,7 +110,7 @@ Array2D(ld) temp_weight_matrix(ld row,ld column,int precision=1){
     }
     return temp_matrix;
 }
-Array3D(ld) random_weight_generator(Array2D(ld) layers,int precision=1){
+Array3D(ld) NeuralNetwork::random_weight_generator(Array2D(ld) layers,int precision=1){
     srand(time(0));
     Array3D(ld) weight;
     for(int i=0;i< (layers.size()-1) ;i++){
@@ -91,14 +120,14 @@ Array3D(ld) random_weight_generator(Array2D(ld) layers,int precision=1){
     }
     return weight;
 }
-ld vect_sum(Array1D(ld) a){
+ld NeuralNetwork::vect_sum(Array1D(ld) a){
     ld tmp=0.0;
     for(ll i = 0; i < a.size(); i++ ){
         tmp+=a[i];
     }
     return tmp;
 }
-Array1D(ld) vect_mul(Array1D(ld) a,Array1D(ld) b){
+Array1D(ld) NeuralNetwork::vect_mul(Array1D(ld) a,Array1D(ld) b){
     Array1D(ld) f;
     if(a.size()==b.size()){
         for(ll i = 0; i < a.size(); i++ ){
@@ -107,17 +136,17 @@ Array1D(ld) vect_mul(Array1D(ld) a,Array1D(ld) b){
     }
     return f;
 }
-Array1D(ld) mat_col(Array2D(ld) a,ll index){
+Array1D(ld) NeuralNetwork::mat_col(Array2D(ld) a,ll index){
     Array1D(ld) f(a.size());
     for( ll i = 0; i < a.size(); i++ ){
         f[i]=a[i][index];
     }
     return f;
 }
-Array1D(ld) mat_row(Array2D(ld) a,ll index){
+Array1D(ld) NeuralNetwork::mat_row(Array2D(ld) a,ll index){
     return a[index];
 }
-Array2D(ld) mat_mul(Array2D(ld) a,Array2D(ld) b){
+Array2D(ld) NeuralNetwork::mat_mul(Array2D(ld) a,Array2D(ld) b){
     Array2D(ld) f(a.size(),Array1D(ld)(b[0].size()));
     if(b.size()==a[0].size()){
         for( ll i = 0; i < a.size(); i++ ){
@@ -128,7 +157,7 @@ Array2D(ld) mat_mul(Array2D(ld) a,Array2D(ld) b){
     }
     return f;
 }
-Array2D(ld) mat_transpose(Array2D(ld) a){
+Array2D(ld) NeuralNetwork::mat_transpose(Array2D(ld) a){
     Array2D(ld) f(a[0].size(),Array1D(ld)(a.size()));
     for(int i=0;i<a.size();i++){
         for(int j=0;j<a[i].size();j++){
@@ -137,7 +166,7 @@ Array2D(ld) mat_transpose(Array2D(ld) a){
     }
     return f;
 }
-void feedforward(Array2D(ld) &layers,Array3D(ld) &weights){
+void NeuralNetwork::feedforward(Array2D(ld) &layers,Array3D(ld) &weights){
     for(int i=0;i<weights.size();i++){
         Array2D(ld) tmp=mat_mul(weights[i],mat_transpose({layers[i]}));
         layers[i+1]=mat_transpose(tmp)[0];
@@ -147,7 +176,7 @@ void feedforward(Array2D(ld) &layers,Array3D(ld) &weights){
         // print1D(layers[i+1]);
     }
 }
-Array2D(ld) weight_change(Array2D(ld) weights){
+Array2D(ld) NeuralNetwork::weight_change(Array2D(ld) weights){
     Array2D(ld) temp_weight;
     Array1D(ld) row_sum;
     for(int i=0;i<weights.size();i++){row_sum.push_back(vect_sum(weights[i]));}
@@ -161,7 +190,7 @@ Array2D(ld) weight_change(Array2D(ld) weights){
     }
     return temp_weight;
 }
-Array2D(ld) create_error_matrix(Array3D(ld) weights,Array1D(ld)output_error){
+Array2D(ld) NeuralNetwork::create_error_matrix(Array3D(ld) weights,Array1D(ld)output_error){
     Array2D(ld) error_array;
     error_array.push_back(output_error);
     for(int i=weights.size()-1;i>0;i--){
@@ -178,7 +207,7 @@ Array2D(ld) create_error_matrix(Array3D(ld) weights,Array1D(ld)output_error){
     }
     return error_array;
 }
-Array1D(ld) error_weight_differential(ld error,Array1D(ld) prev_output,Array1D(ld) linked_weights){
+Array1D(ld) NeuralNetwork::error_weight_differential(ld error,Array1D(ld) prev_output,Array1D(ld) linked_weights){
     Array1D(ld) f;
     // print1D(prev_output);
     // print1D(linked_weights);
@@ -188,7 +217,7 @@ Array1D(ld) error_weight_differential(ld error,Array1D(ld) prev_output,Array1D(l
     for(int i=0;i<prev_output.size();i++){f.push_back(temp_sum*prev_output[i]);}
     return f;
 }
-void backpropogate(Array2D(ld) &layers,Array3D(ld) &weights,Array1D(ld)target_output,ld learning_rate){
+void NeuralNetwork::backpropogate(Array2D(ld) &layers,Array3D(ld) &weights,Array1D(ld)target_output,ld learning_rate){
     // actual_output=layers[-1]
     // error_matrix=create_error_matrix(weights,target_output-actual_output)
     // # print("error:- ",error_matrix)
@@ -227,52 +256,56 @@ void backpropogate(Array2D(ld) &layers,Array3D(ld) &weights,Array1D(ld)target_ou
     }
 
 }
-int main(int argc ,char** argv){
-    //learining rate
+
+NeuralNetwork::NeuralNetwork(ld input_nodes,Array1D(ld) hidden_layers_sizes,ld output_nodes,ld learning_rate){
+    lr=learning_rate;
+    
     cout.precision(10);
-    ld learning_rate=0.08;
-    // cout<<learning_rate<<endl;
-    Array1D(ld) expected={2,4,7,5,6,5,6,2,7,4,5,3},output_tmp;//expected output layer
-    Array2D(ld) layers;
-    Array3D(ld) weights;
-    
-    layers.push_back({1,2,3,2,4,1,2,3,5,6,3,4,5,2,3});//input nodes FEATURES
+    //input layer OR number of FEATURES 
+    Array1D(ld) tmp1(input_nodes,0);
+    layers.push_back(tmp1);
+    //hidden layers
+    for ( int i = 0; i < hidden_layers_sizes.size(); i++ ){
+        Array1D(ld) tmp(hidden_layers_sizes[i],0);
+        layers.push_back(tmp);
+    }
+    //output layer OR EXPECTED OUTPUT
+    Array1D(ld) tmp2(output_nodes,0);
+    layers.push_back(tmp2);
 
-    create_layers(layers,{3,2,5,2,4,3,4});//adding hidden nodes
+    weights=random_weight_generator(layers);
+}
+void NeuralNetwork::train(Array1D(ld) input_layer,Array1D(ld)target_output_layer){
+    layers[0]=input_layer;
+    feedforward(layers,weights);
+    backpropogate(layers,weights,target_output_layer,lr);
+}
 
-    for(int i=0;i<expected.size();i++){output_tmp.push_back(0);}
-    layers.push_back(output_tmp);//output layer
-    
-    weights=random_weight_generator(layers);//creating random weights
-    
-    
-    // cout<<"Layers"<<endl;
-    // print2D(layers);//checking the layers
-    // cout<<"Weights"<<endl;
-    // print3D(weights);//checking the weights
-    // cout<<"Training Started ..."<<endl;
+int main(int argc ,char** argv){
+
+    Array1D(ld) a={2,5,6,3};
+    NeuralNetwork N(4,{3,8,3,4},5,0.1);
+    ll epoch=1;//if epoch passing entire dataset 
+
+    cout<<"Layers"<<endl;N.print2D(N.layers);//checking the layers
+    // cout<<"Weights"<<endl;N.print3D(N.weights);//checking the weights
     
     auto start = high_resolution_clock::now();
-    ll epoch=10000;
+    cout<<"Training Started ..."<<endl;
     for(int i=0 ;i<epoch;i++){
 
         // training 
         printf("Epoch :- %d\r",i+1);
-        feedforward(layers,weights);
-        backpropogate(layers,weights,expected,learning_rate);
+        N.train(a,{0.01,0.01,0.01,0.99,0.01});
     }
-    printf("\n");
+    cout<<endl;
     auto stop = high_resolution_clock::now(); 
     auto duration = duration_cast<microseconds>(stop - start); 
     // cout << "Time taken for Training : "<< duration.count() << " microseconds" << endl;
-    // cout<<"Epoch :- "<<epoch<<endl;
-    cout << "Time taken for Training : "<< duration.count()/1000000.0 << " Seconds" << endl;
-    cout<<"Training Finished"<<endl;
+    cout << "Time taken for Training : "<< duration.count()/1000000.0 << " Seconds" << endl<<"Training Finished"<<endl;
     
-    // cout<<"Layers"<<endl;
-    // print2D(layers);//checking the layers
-    // cout<<"Weights"<<endl;
-    // print3D(weights);//checking the weights
+    cout<<"Layers"<<endl;N.print2D(N.layers);//checking the layers
+    // cout<<"Weights"<<endl;N.print3D(N.weights);//checking the weights
     
     return 0;
 }
