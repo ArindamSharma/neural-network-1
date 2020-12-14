@@ -90,7 +90,7 @@ double ***NeuralNetwork::random_weight_generator(double **layers){
         size_array_weight[i][0]=size_array_layer[i+1];//row
         size_array_weight[i][1]=size_array_layer[i]; //col
         print("row,col = "<<size_array_weight[i][0]<<","<<size_array_weight[i][1]);
-        weight[0]=temp_weight_matrix(size_array_weight[i][0],size_array_weight[i][1],3);
+        weight[i]=temp_weight_matrix(size_array_weight[i][0],size_array_weight[i][1],3);
     }
     print("Randon Weight Generated");
     return weight;
